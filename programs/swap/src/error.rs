@@ -4,4 +4,7 @@ use anchor_lang::prelude::*;
 pub enum CustomError {
     #[msg("user insufficient funds")]
     InsufficientFunds,
+
+    #[msg("Account invalid type expect")]
+    InvalidAccount
 }
