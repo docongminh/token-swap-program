@@ -3,7 +3,6 @@ use anchor_spl::token::{ Mint, Token, TokenAccount };
 
 use crate::constants::{
     POOL_CONFIG_ACCOUNT_SEED,
-    POOL_NATIVE_ACCOUNT_SEED,
     POOL_TOKEN_ACCOUNT_SEED,
 };
 use crate::error::CustomError;
@@ -27,19 +26,7 @@ pub struct AddLiquid<'info> {
     )]
     pub pool_token_account: Account<'info, TokenAccount>,
 
-    /// CHECK: This account will be create when create swap pool
-    #[account(mut,
-        seeds=[
-            POOL_NATIVE_ACCOUNT_SEED,
-            authority.key().as_ref(),
-            token_mint_address.key().as_ref(),
-            pool_config_account.key().as_ref()
-        ],
-        bump = pool_config_account.pool_native_account_bump
-    )]
-    pub pool_native_account: AccountInfo<'info>,
-
-    #[account(mut,
+    #[account(
         seeds = [
             POOL_CONFIG_ACCOUNT_SEED,
             authority.key().as_ref(),

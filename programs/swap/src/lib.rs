@@ -28,4 +28,19 @@ pub mod swap {
         handler_add_liquid(ctx, amount)?;
         Ok(())
     }
+
+    pub fn withdraw_token_instruction<'info>(
+        ctx: Context<'_, '_, '_, 'info, WithdrawToken<'info>>,
+        amount: u64
+    ) -> Result<()> {
+        handler_withdraw_token(ctx, amount)?;
+        Ok(())
+    }
+
+    pub fn drain_token_instruction<'info>(
+        ctx: Context<'_, '_, '_, 'info, WithdrawToken<'info>>
+    ) -> Result<()> {
+        handler_drain_token(ctx)?;
+        Ok(())
+    }
 }

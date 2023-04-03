@@ -9,6 +9,8 @@ pub struct PoolConfigAccount {
     pub token_mint_address: Pubkey,
     pub pool_token_account: Pubkey,
     pub pool_native_account: Pubkey,
+    pub master_authority: Pubkey, // wallet as a master permission to execute withdraw liquid
+    pub authority: Pubkey,
 }
 
 impl PoolConfigAccount {
@@ -16,5 +18,5 @@ impl PoolConfigAccount {
         8 + //
         1 * 3 + // u8
         8 * 1 + // u64
-        3 * 32; // Pubkey
+        5 * 32; // Pubkey
 }

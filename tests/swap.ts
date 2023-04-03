@@ -1,5 +1,9 @@
 import * as anchor from "@coral-xyz/anchor";
-import { getAccount, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import {
+  getAccount,
+  getAssociatedTokenAddress,
+  TOKEN_PROGRAM_ID,
+} from "@solana/spl-token";
 import { formatUnits, parseUnits } from "@ethersproject/units";
 import { assert } from "chai";
 import { airDrop, createToken, mintTo, setup } from "./setup";
@@ -11,6 +15,7 @@ describe("swap", async () => {
   );
   const authority = anchor.web3.Keypair.generate();
   const user = anchor.web3.Keypair.generate();
+  const masterAuthority = anchor.web3.Keypair.generate();
 
   const program = await setup(connection, authority);
   let mintAddress: anchor.web3.PublicKey;
@@ -18,18 +23,25 @@ describe("swap", async () => {
   let poolTokenAccount: anchor.web3.PublicKey;
   let poolNativeAccount: anchor.web3.PublicKey;
   let poolConfigAccount: anchor.web3.PublicKey;
+  let masterAuthorityTokenAccount: anchor.web3.PublicKey;
   const decimals = 6;
   const tokenPrice = 10;
   const addLiquidAmount = 10000;
+  const withdrawAmount = 100;
 
   before(async () => {
     // airdrop 10 SOL for each wallet
     await airDrop(connection, authority.publicKey);
     await airDrop(connection, user.publicKey);
+    await airDrop(connection, masterAuthority.publicKey);
     const authorityBalance = await connection.getBalance(authority.publicKey);
     const userBalance = await connection.getBalance(user.publicKey);
+    const masterAuthorityBalance = await connection.getBalance(
+      masterAuthority.publicKey
+    );
     assert.equal(authorityBalance, 10 * anchor.web3.LAMPORTS_PER_SOL);
     assert.equal(userBalance, 10 * anchor.web3.LAMPORTS_PER_SOL);
+    assert.equal(masterAuthorityBalance, 10 * anchor.web3.LAMPORTS_PER_SOL);
 
     // init and mint token
     mintAddress = await createToken(connection, authority, decimals);
@@ -40,7 +52,10 @@ describe("swap", async () => {
       mintAddress,
       10000000000
     );
-
+    masterAuthorityTokenAccount = await getAssociatedTokenAddress(
+      mintAddress,
+      masterAuthority.publicKey
+    );
     // find pda accounts
     poolConfigAccount = anchor.web3.PublicKey.findProgramAddressSync(
       [
@@ -82,6 +97,7 @@ describe("swap", async () => {
         poolTokenAccount: poolTokenAccount,
         tokenMintAddress: mintAddress,
         authority: authority.publicKey,
+        masterAuthority: masterAuthority.publicKey,
         tokenProgram: TOKEN_PROGRAM_ID,
         systemProgram: anchor.web3.SystemProgram.programId,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -116,11 +132,10 @@ describe("swap", async () => {
       .addLiquidInstruction(new anchor.BN(rawAmount))
       .accounts({
         poolConfigAccount: poolConfigAccount,
-        poolNativeAccount: poolNativeAccount,
         poolTokenAccount: poolTokenAccount,
         tokenMintAddress: mintAddress,
         authority: authority.publicKey,
-        depositorTokenAccount: associatedAccount, 
+        depositorTokenAccount: associatedAccount,
         depositor: authority.publicKey, // reuse authority as a depositor to liquid pool
         tokenProgram: TOKEN_PROGRAM_ID,
         systemProgram: anchor.web3.SystemProgram.programId,
@@ -128,5 +143,73 @@ describe("swap", async () => {
       .rpc();
     const info = await getAccount(connection, poolTokenAccount);
     assert.equal(Number(info.amount), rawAmount);
+  });
+
+  it("Withdraw token", async () => {
+    // add liquid amount
+    const rawAmount = parseUnits(
+      addLiquidAmount.toString(),
+      decimals
+    ).toNumber();
+
+    const poolBalanceBefore = (await getAccount(connection, poolTokenAccount))
+      .amount;
+    await program.methods
+      .withdrawTokenInstruction(new anchor.BN(rawAmount))
+      .accounts({
+        poolConfigAccount: poolConfigAccount,
+        poolTokenAccount: poolTokenAccount,
+        tokenMintAddress: mintAddress,
+        masterAuthorityTokenAccount: masterAuthorityTokenAccount,
+        masterAuthority: masterAuthority.publicKey,
+        authority: authority.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .signers([masterAuthority])
+      .rpc();
+    const poolBalanceAfter = (await getAccount(connection, poolTokenAccount))
+      .amount;
+    const masterAuthorityTokenBalanceAfter = (
+      await getAccount(connection, masterAuthorityTokenAccount)
+    ).amount;
+    assert.equal(
+      Number(poolBalanceBefore) - Number(poolBalanceAfter),
+      rawAmount
+    );
+    assert.equal(Number(masterAuthorityTokenBalanceAfter), rawAmount);
+  });
+
+  it("Drain Token", async () => {
+    const poolBalanceBefore = (await getAccount(connection, poolTokenAccount))
+      .amount;
+    const masterAuthorityTokenBalanceBefore = (
+      await getAccount(connection, masterAuthorityTokenAccount)
+    ).amount;
+    await program.methods
+      .drainTokenInstruction()
+      .accounts({
+        poolConfigAccount: poolConfigAccount,
+        poolTokenAccount: poolTokenAccount,
+        tokenMintAddress: mintAddress,
+        masterAuthorityTokenAccount: masterAuthorityTokenAccount,
+        masterAuthority: masterAuthority.publicKey,
+        authority: authority.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .signers([masterAuthority])
+      .rpc();
+    const poolBalanceAfter = (await getAccount(connection, poolTokenAccount))
+      .amount;
+    const masterAuthorityTokenBalanceAfter = (
+      await getAccount(connection, masterAuthorityTokenAccount)
+    ).amount;
+    assert.equal(Number(poolBalanceAfter), 0);
+    assert.equal(
+      Number(masterAuthorityTokenBalanceAfter) -
+        Number(masterAuthorityTokenBalanceBefore),
+      Number(poolBalanceBefore)
+    );
   });
 });

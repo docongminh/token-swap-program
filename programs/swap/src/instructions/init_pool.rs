@@ -55,6 +55,9 @@ pub struct Initialize<'info> {
     pub token_mint_address: Account<'info, Mint>,
     #[account(mut, constraint = authority.data_is_empty() @ CustomError::InvalidAccount)]
     pub authority: Signer<'info>,
+    /// CHECK: this account use to setup pool config account
+    #[account(constraint = master_authority.data_is_empty() @ CustomError::InvalidAccount)]
+    pub master_authority: AccountInfo<'info>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
     pub rent: Sysvar<'info, Rent>,
@@ -73,6 +76,8 @@ pub fn handler_init<'info>(
     pool_config_account.token_mint_address = ctx.accounts.token_mint_address.key();
     pool_config_account.pool_token_account = ctx.accounts.pool_token_account.key();
     pool_config_account.pool_native_account = ctx.accounts.pool_native_account.key();
+    pool_config_account.master_authority = ctx.accounts.master_authority.key();
+    pool_config_account.authority = ctx.accounts.authority.key();
 
     ctx.accounts.create_native_account_vault(pool_native_account_bump)?;
     Ok(())
