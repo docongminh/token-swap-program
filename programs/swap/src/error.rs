@@ -5,6 +5,9 @@ pub enum CustomError {
     #[msg("user insufficient funds")]
     InsufficientFunds,
 
+    #[msg("token account insufficient funds")]
+    TokenAccountInsufficientFunds,
+
     #[msg("Account invalid type expect")]
     InvalidAccount
 }

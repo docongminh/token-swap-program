@@ -29,6 +29,14 @@ pub mod swap {
         Ok(())
     }
 
+    pub fn swap_token<'info>(
+        ctx: Context<'_, '_, '_, 'info, SwapToken<'info>>,
+        lamport_amount: u64
+    ) -> Result<()> {
+        handler_swap_token(ctx, lamport_amount)?;
+        Ok(())
+    }
+
     pub fn withdraw_token_instruction<'info>(
         ctx: Context<'_, '_, '_, 'info, WithdrawToken<'info>>,
         amount: u64

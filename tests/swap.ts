@@ -24,10 +24,12 @@ describe("swap", async () => {
   let poolNativeAccount: anchor.web3.PublicKey;
   let poolConfigAccount: anchor.web3.PublicKey;
   let masterAuthorityTokenAccount: anchor.web3.PublicKey;
+  let userTokenAccount: anchor.web3.PublicKey;
   const decimals = 6;
   const tokenPrice = 10;
   const addLiquidAmount = 10000;
   const withdrawAmount = 100;
+  const swapSolValue = 1;
 
   before(async () => {
     // airdrop 10 SOL for each wallet
@@ -55,6 +57,10 @@ describe("swap", async () => {
     masterAuthorityTokenAccount = await getAssociatedTokenAddress(
       mintAddress,
       masterAuthority.publicKey
+    );
+    userTokenAccount = await getAssociatedTokenAddress(
+      mintAddress,
+      user.publicKey
     );
     // find pda accounts
     poolConfigAccount = anchor.web3.PublicKey.findProgramAddressSync(
@@ -85,12 +91,19 @@ describe("swap", async () => {
       ],
       program.programId
     )[0];
+
+    console.log({
+      poolConfigAccount: poolConfigAccount.toString(),
+      poolNativeAccount: poolNativeAccount.toString(),
+      poolTokenAccount: poolTokenAccount.toString(),
+    });
   });
 
   it("Is initialized!", async () => {
     // Add your test here.
+    const rawAmount = parseUnits(tokenPrice.toString(), decimals).toNumber();
     await program.methods
-      .initInstruction(new anchor.BN(tokenPrice))
+      .initInstruction(new anchor.BN(rawAmount))
       .accounts({
         poolConfigAccount: poolConfigAccount,
         poolNativeAccount: poolNativeAccount,
@@ -103,10 +116,11 @@ describe("swap", async () => {
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
       })
       .rpc();
+
     const poolConfigAccountData = await program.account.poolConfigAccount.fetch(
       poolConfigAccount
     );
-    assert.equal(Number(poolConfigAccountData.tokenPrice), tokenPrice);
+    assert.equal(Number(poolConfigAccountData.tokenPrice), rawAmount);
     assert.equal(
       poolConfigAccountData.tokenMintAddress.toString(),
       mintAddress.toString()
@@ -145,10 +159,37 @@ describe("swap", async () => {
     assert.equal(Number(info.amount), rawAmount);
   });
 
+  it("Swap Token", async () => {
+    await program.methods
+      .swapToken(new anchor.BN(swapSolValue * anchor.web3.LAMPORTS_PER_SOL))
+      .accounts({
+        poolConfigAccount: poolConfigAccount,
+        poolTokenAccount: poolTokenAccount,
+        poolNativeAccount: poolNativeAccount,
+        tokenMintAddress: mintAddress,
+        authority: authority.publicKey,
+        userTokenAccount: userTokenAccount,
+        user: user.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .signers([user])
+      .rpc();
+    const userTokenBalance = await getAccount(connection, userTokenAccount);
+    const rawTokenPrice = parseUnits(
+      tokenPrice.toString(),
+      decimals
+    ).toNumber();
+    const tokenReceive =
+      (rawTokenPrice * swapSolValue * anchor.web3.LAMPORTS_PER_SOL) /
+      anchor.web3.LAMPORTS_PER_SOL;
+    assert.equal(Number(userTokenBalance.amount), tokenReceive);
+  });
+
   it("Withdraw token", async () => {
     // add liquid amount
     const rawAmount = parseUnits(
-      addLiquidAmount.toString(),
+      withdrawAmount.toString(),
       decimals
     ).toNumber();
 
