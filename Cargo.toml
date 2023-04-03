@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "programs/*"
+    "programs/swap"
 ]
 
 [profile.release]
