@@ -1,6 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { min } from "bn.js";
+import { getAccount, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { formatUnits, parseUnits } from "@ethersproject/units";
 import { assert } from "chai";
 import { airDrop, createToken, mintTo, setup } from "./setup";
 
@@ -20,6 +20,7 @@ describe("swap", async () => {
   let poolConfigAccount: anchor.web3.PublicKey;
   const decimals = 6;
   const tokenPrice = 10;
+  const addLiquidAmount = 10000;
 
   before(async () => {
     // airdrop 10 SOL for each wallet
@@ -73,7 +74,7 @@ describe("swap", async () => {
 
   it("Is initialized!", async () => {
     // Add your test here.
-    const tx = await program.methods
+    await program.methods
       .initInstruction(new anchor.BN(tokenPrice))
       .accounts({
         poolConfigAccount: poolConfigAccount,
@@ -103,5 +104,29 @@ describe("swap", async () => {
       poolConfigAccountData.poolNativeAccount.toString(),
       poolNativeAccount.toString()
     );
+  });
+
+  it("Add liquid", async () => {
+    // add liquid amount
+    const rawAmount = parseUnits(
+      addLiquidAmount.toString(),
+      decimals
+    ).toNumber();
+    await program.methods
+      .addLiquidInstruction(new anchor.BN(rawAmount))
+      .accounts({
+        poolConfigAccount: poolConfigAccount,
+        poolNativeAccount: poolNativeAccount,
+        poolTokenAccount: poolTokenAccount,
+        tokenMintAddress: mintAddress,
+        authority: authority.publicKey,
+        depositorTokenAccount: associatedAccount, 
+        depositor: authority.publicKey, // reuse authority as a depositor to liquid pool
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .rpc();
+    const info = await getAccount(connection, poolTokenAccount);
+    assert.equal(Number(info.amount), rawAmount);
   });
 });

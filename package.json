@@ -5,6 +5,7 @@
     },
     "dependencies": {
         "@coral-xyz/anchor": "^0.27.0",
+        "@ethersproject/units": "^5.7.0",
         "@solana/spl-token": "^0.3.7"
     },
     "devDependencies": {
