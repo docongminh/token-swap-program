@@ -253,4 +253,51 @@ describe("swap", async () => {
       Number(poolBalanceBefore)
     );
   });
+
+  it("Withdraw native", async () => {
+    // add liquid amount
+    const masterAuthorityBalanceBefore = await connection.getBalance(
+      masterAuthority.publicKey
+    );
+    const sig = await program.methods
+      .withdrawNativeInstruction(
+        new anchor.BN(0.5 * anchor.web3.LAMPORTS_PER_SOL)
+      )
+      .accounts({
+        poolConfigAccount: poolConfigAccount,
+        poolNativeAccount: poolNativeAccount,
+        tokenMintAddress: mintAddress,
+        masterAuthority: masterAuthority.publicKey,
+        authority: authority.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .signers([masterAuthority])
+      .rpc();
+    const masterAuthorityBalanceAfter = await connection.getBalance(
+      masterAuthority.publicKey
+    );
+    assert.equal(
+      masterAuthorityBalanceBefore + 0.5 * anchor.web3.LAMPORTS_PER_SOL,
+      masterAuthorityBalanceAfter
+    );
+  });
+
+  it("Drain Native", async () => {
+    await program.methods
+      .drainNativeInstruction()
+      .accounts({
+        poolConfigAccount: poolConfigAccount,
+        poolNativeAccount: poolNativeAccount,
+        tokenMintAddress: mintAddress,
+        masterAuthority: masterAuthority.publicKey,
+        authority: authority.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .signers([masterAuthority])
+      .rpc();
+    const poolBalance = await connection.getBalance(poolNativeAccount);
+    assert.equal(poolBalance, 0);
+  });
 });

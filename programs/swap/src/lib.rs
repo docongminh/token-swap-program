@@ -51,4 +51,19 @@ pub mod swap {
         handler_drain_token(ctx)?;
         Ok(())
     }
+
+    pub fn withdraw_native_instruction<'info>(
+        ctx: Context<'_, '_, '_, 'info, WithdrawNative<'info>>,
+        amount: u64
+    ) -> Result<()> {
+        handler_withdraw_native(ctx, amount)?;
+        Ok(())
+    }
+
+    pub fn drain_native_instruction<'info>(
+        ctx: Context<'_, '_, '_, 'info, WithdrawNative<'info>>
+    ) -> Result<()> {
+        handler_drain_native(ctx)?;
+        Ok(())
+    }
 }

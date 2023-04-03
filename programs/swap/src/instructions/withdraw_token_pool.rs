@@ -45,7 +45,7 @@ pub struct WithdrawToken<'info> {
     pub master_authority_token_account: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
     pub authority: Signer<'info>,
-    #[account(mut, constraint = master_authority.lamports() > 0 @ CustomError::InsufficientFunds)]
+    #[account(mut)]
     pub master_authority: Signer<'info>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
