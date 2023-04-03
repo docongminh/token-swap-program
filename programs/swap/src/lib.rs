@@ -14,9 +14,10 @@ pub mod swap {
     use super::*;
 
     pub fn init_instruction<'info>(
-        ctx: Context<'_, '_, '_, 'info, Initialize<'info>>
+        ctx: Context<'_, '_, '_, 'info, Initialize<'info>>,
+        token_price: u64
     ) -> Result<()> {
-        handler_init(ctx)?;
+        handler_init(ctx, token_price)?;
         Ok(())
     }
 }

@@ -1,4 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { min } from "bn.js";
 import { assert } from "chai";
 import { airDrop, createToken, mintTo, setup } from "./setup";
 
@@ -13,7 +15,11 @@ describe("swap", async () => {
   const program = await setup(connection, authority);
   let mintAddress: anchor.web3.PublicKey;
   let associatedAccount: anchor.web3.PublicKey;
+  let poolTokenAccount: anchor.web3.PublicKey;
+  let poolNativeAccount: anchor.web3.PublicKey;
+  let poolConfigAccount: anchor.web3.PublicKey;
   const decimals = 6;
+  const tokenPrice = 10;
 
   before(async () => {
     // airdrop 10 SOL for each wallet
@@ -33,11 +39,69 @@ describe("swap", async () => {
       mintAddress,
       10000000000
     );
+
+    // find pda accounts
+    poolConfigAccount = anchor.web3.PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("pool_config_account_seed"),
+        authority.publicKey.toBuffer(),
+        mintAddress.toBuffer(),
+      ],
+      program.programId
+    )[0];
+
+    poolTokenAccount = anchor.web3.PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("pool_token_account_seed"),
+        authority.publicKey.toBuffer(),
+        mintAddress.toBuffer(),
+        poolConfigAccount.toBuffer(),
+      ],
+      program.programId
+    )[0];
+
+    poolNativeAccount = anchor.web3.PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("pool_native_account_seed"),
+        authority.publicKey.toBuffer(),
+        mintAddress.toBuffer(),
+        poolConfigAccount.toBuffer(),
+      ],
+      program.programId
+    )[0];
   });
 
   it("Is initialized!", async () => {
     // Add your test here.
-    const tx = await program.methods.initInstruction().rpc();
-    console.log("Your transaction signature", tx);
+    const tx = await program.methods
+      .initInstruction(new anchor.BN(tokenPrice))
+      .accounts({
+        poolConfigAccount: poolConfigAccount,
+        poolNativeAccount: poolNativeAccount,
+        poolTokenAccount: poolTokenAccount,
+        tokenMintAddress: mintAddress,
+        authority: authority.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: anchor.web3.SystemProgram.programId,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+      })
+      .rpc();
+    const poolConfigAccountData = await program.account.poolConfigAccount.fetch(
+      poolConfigAccount
+    );
+    assert.equal(Number(poolConfigAccountData.tokenPrice), tokenPrice);
+    assert.equal(
+      poolConfigAccountData.tokenMintAddress.toString(),
+      mintAddress.toString()
+    );
+    assert.equal(
+      poolConfigAccountData.poolTokenAccount.toString(),
+      poolTokenAccount.toString()
+    );
+
+    assert.equal(
+      poolConfigAccountData.poolNativeAccount.toString(),
+      poolNativeAccount.toString()
+    );
   });
 });
