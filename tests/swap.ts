@@ -136,6 +136,33 @@ describe("swap", async () => {
     );
   });
 
+  it("[Fail case] Add liquid insufficient funds", async () => {
+    // add liquid amount
+    const rawAmount =
+      Number((await getAccount(connection, associatedAccount)).amount) + 1;
+    let sig: string | null;
+    try {
+      sig = await program.methods
+        .addLiquidInstruction(new anchor.BN(rawAmount))
+        .accounts({
+          poolConfigAccount: poolConfigAccount,
+          poolTokenAccount: poolTokenAccount,
+          tokenMintAddress: mintAddress,
+          authority: authority.publicKey,
+          depositorTokenAccount: associatedAccount,
+          depositor: authority.publicKey, // reuse authority as a depositor to liquid pool
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: anchor.web3.SystemProgram.programId,
+        })
+        .rpc();
+    } catch (error) {
+      assert.equal(error.error.errorCode.code, "InsufficientFunds");
+      assert.equal(error.error.errorCode.number, 6000);
+      assert.equal(error.error.errorMessage, "user insufficient funds");
+    }
+    assert.equal(sig, null);
+  });
+
   it("Add liquid", async () => {
     // add liquid amount
     const rawAmount = parseUnits(
@@ -184,6 +211,65 @@ describe("swap", async () => {
       (rawTokenPrice * swapSolValue * anchor.web3.LAMPORTS_PER_SOL) /
       anchor.web3.LAMPORTS_PER_SOL;
     assert.equal(Number(userTokenBalance.amount), tokenReceive);
+  });
+
+  it("[fail case] Swap Token insufficient funds", async () => {
+    const userBalance = await connection.getBalance(user.publicKey);
+    let sig: string | null;
+    try {
+      sig = await program.methods
+        .swapToken(new anchor.BN(userBalance + 1))
+        .accounts({
+          poolConfigAccount: poolConfigAccount,
+          poolTokenAccount: poolTokenAccount,
+          poolNativeAccount: poolNativeAccount,
+          tokenMintAddress: mintAddress,
+          authority: authority.publicKey,
+          userTokenAccount: userTokenAccount,
+          user: user.publicKey,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: anchor.web3.SystemProgram.programId,
+        })
+        .signers([user])
+        .rpc();
+    } catch (error) {
+      assert.equal(error.error.errorCode.code, "InsufficientFunds");
+      assert.equal(error.error.errorCode.number, 6000);
+      assert.equal(error.error.errorMessage, "user insufficient funds");
+    }
+    assert.equal(sig, null);
+  });
+
+  //////////// WITHDRAW TOKEN
+
+  it("[Fail case ] Withdraw token insufficient funds", async () => {
+    // add liquid amount
+    let sig: string | null;
+    try {
+      const rawAmount = parseUnits(
+        addLiquidAmount.toString() + 1,
+        decimals
+      ).toNumber();
+      sig = await program.methods
+        .withdrawTokenInstruction(new anchor.BN(rawAmount))
+        .accounts({
+          poolConfigAccount: poolConfigAccount,
+          poolTokenAccount: poolTokenAccount,
+          tokenMintAddress: mintAddress,
+          masterAuthorityTokenAccount: masterAuthorityTokenAccount,
+          masterAuthority: masterAuthority.publicKey,
+          authority: authority.publicKey,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: anchor.web3.SystemProgram.programId,
+        })
+        .signers([masterAuthority])
+        .rpc();
+    } catch (error) {
+      assert.equal(error.error.errorCode.code, "InsufficientFunds");
+      assert.equal(error.error.errorCode.number, 6000);
+      assert.equal(error.error.errorMessage, "user insufficient funds");
+    }
+    assert.equal(sig, null);
   });
 
   it("Withdraw token", async () => {
@@ -254,12 +340,38 @@ describe("swap", async () => {
     );
   });
 
+  //////////// WITHDRAW NATIVE
+  it("[Fail case] Withdraw native insufficient funds ", async () => {
+    let sig: string | null;
+    try {
+      sig = await program.methods
+        .withdrawNativeInstruction(
+          new anchor.BN(10 * anchor.web3.LAMPORTS_PER_SOL)
+        )
+        .accounts({
+          poolConfigAccount: poolConfigAccount,
+          poolNativeAccount: poolNativeAccount,
+          tokenMintAddress: mintAddress,
+          masterAuthority: masterAuthority.publicKey,
+          authority: authority.publicKey,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: anchor.web3.SystemProgram.programId,
+        })
+        .signers([masterAuthority])
+        .rpc();
+    } catch (error) {
+      assert.equal(error.error.errorCode.code, "InsufficientFunds");
+      assert.equal(error.error.errorCode.number, 6000);
+      assert.equal(error.error.errorMessage, "user insufficient funds");
+    }
+    assert.equal(sig, null);
+  });
   it("Withdraw native", async () => {
     // add liquid amount
     const masterAuthorityBalanceBefore = await connection.getBalance(
       masterAuthority.publicKey
     );
-    const sig = await program.methods
+    await program.methods
       .withdrawNativeInstruction(
         new anchor.BN(0.5 * anchor.web3.LAMPORTS_PER_SOL)
       )
