@@ -51,4 +51,4 @@ Run swap:
  
 ##Notes:
   - Currently, I sat defaul SOl value to swap: 0.5 SOL -> receive 5 Token. use specify value at [here](https://github.com/docongminh/token-swap-program/blob/master/client/swap.ts#L26-L41)
-  - I publics `authority`, `master authority`, and `user` private key for convenient testing. All wallet already airdrop SOL for network fee
+  - I public `authority`, `master authority`, and `user` [private key](https://github.com/docongminh/token-swap-program/tree/master/client/keys) for convenient testing. All wallet already airdrop SOL for network fee
