@@ -130,10 +130,6 @@ export async function mintTo(
   return associatedTokenAccount;
 }
 
-export function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 export async function transferSOL(
   connection: anchor.web3.Connection,
   authority: anchor.web3.Keypair,
