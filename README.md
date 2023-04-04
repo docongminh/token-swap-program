@@ -33,11 +33,13 @@ Result example:
 
 
 ## Run test Swap SOL -> Token
-Program ID:
+- All program and token deploy and minted on [devnet](https://explorer.solana.com/address/swapEsYJ7iLDbYeg9154yR1dsUjumanS7LF9KEiJQae?cluster=devnet).
+
+[Program ID](https://explorer.solana.com/address/swapEsYJ7iLDbYeg9154yR1dsUjumanS7LF9KEiJQae?cluster=devnet):
 ```ts
   const programId = swapEsYJ7iLDbYeg9154yR1dsUjumanS7LF9KEiJQae
 ```
-Token mint address:
+[Token mint address](https://explorer.solana.com/address/HVTEudbUMJaMRzCnQ2fo1cq6vL9gqHD9mYbvYhfkmQuh?cluster=devnet):
 ```ts
   const mintAddress = HVTEudbUMJaMRzCnQ2fo1cq6vL9gqHD9mYbvYhfkmQuh
 ```
