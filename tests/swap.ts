@@ -230,9 +230,30 @@ describe("swap", async () => {
     assert.equal(poolConfigAccountData.isActive, false);
   });
 
-  it("[Fail swap after update config] Swap Token", async () => {
+  it("[Fail case] Without permission deactivate pool config", async () => {
+    let sig: string | null;
     try {
-      await program.methods
+      sig = await program.methods
+        .updateConfigInstruction(false)
+        .accounts({
+          poolConfigAccount: poolConfigAccount,
+          tokenMintAddress: mintAddress,
+          authority: user.publicKey,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: anchor.web3.SystemProgram.programId,
+        })
+        .signers([user])
+        .rpc();
+    } catch (error) {
+      assert.equal(error.error.errorCode.code, "ConstraintSeeds");
+    }
+    assert.equal(sig, null);
+  });
+
+  it("[Fail swap after update config] Swap Token", async () => {
+    let sig: string | null;
+    try {
+      sig = await program.methods
         .swapToken(new anchor.BN(swapSolValue * anchor.web3.LAMPORTS_PER_SOL))
         .accounts({
           poolConfigAccount: poolConfigAccount,
@@ -252,6 +273,27 @@ describe("swap", async () => {
       assert.equal(error.error.errorCode.number, 6002);
       assert.equal(error.error.errorMessage, "Deactive Pool");
     }
+    assert.equal(sig, null);
+  });
+
+  it("[Fail case] Without permission activate pool config", async () => {
+    let sig: string | null;
+    try {
+      sig = await program.methods
+        .updateConfigInstruction(true)
+        .accounts({
+          poolConfigAccount: poolConfigAccount,
+          tokenMintAddress: mintAddress,
+          authority: user.publicKey,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: anchor.web3.SystemProgram.programId,
+        })
+        .signers([user])
+        .rpc();
+    } catch (error) {
+      assert.equal(error.error.errorCode.code, "ConstraintSeeds");
+    }
+    assert.equal(sig, null);
   });
 
   it("Activate pool config", async () => {
@@ -331,6 +373,36 @@ describe("swap", async () => {
   });
 
   //////////// WITHDRAW TOKEN
+
+  it("[Fail case ] User withdraw token without permission", async () => {
+    // add liquid amount
+    let sig: string | null;
+    try {
+      const rawAmount = parseUnits(
+        addLiquidAmount.toString(),
+        decimals
+      ).toNumber();
+      sig = await program.methods
+        .withdrawTokenInstruction(new anchor.BN(rawAmount - 100))
+        .accounts({
+          poolConfigAccount: poolConfigAccount,
+          poolTokenAccount: poolTokenAccount,
+          tokenMintAddress: mintAddress,
+          masterAuthorityTokenAccount: userTokenAccount,
+          masterAuthority: user.publicKey,
+          authority: authority.publicKey,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: anchor.web3.SystemProgram.programId,
+        })
+        .signers([user])
+        .rpc();
+    } catch (error) {
+      assert.equal(error.error.errorCode.code, "WithdrawPermission");
+      assert.equal(error.error.errorCode.number, 6004);
+      assert.equal(error.error.errorMessage, "without withdraw permission");
+    }
+    assert.equal(sig, null);
+  });
 
   it("[Fail case ] Withdraw token insufficient funds", async () => {
     // add liquid amount
@@ -431,6 +503,33 @@ describe("swap", async () => {
   });
 
   //////////// WITHDRAW NATIVE
+
+  it("[Fail case] Withdraw native without permission ", async () => {
+    let sig: string | null;
+    try {
+      sig = await program.methods
+        .withdrawNativeInstruction(
+          new anchor.BN(0.01 * anchor.web3.LAMPORTS_PER_SOL)
+        )
+        .accounts({
+          poolConfigAccount: poolConfigAccount,
+          poolNativeAccount: poolNativeAccount,
+          tokenMintAddress: mintAddress,
+          masterAuthority: user.publicKey,
+          authority: authority.publicKey,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: anchor.web3.SystemProgram.programId,
+        })
+        .signers([user])
+        .rpc();
+    } catch (error) {
+      assert.equal(error.error.errorCode.code, "WithdrawPermission");
+      assert.equal(error.error.errorCode.number, 6004);
+      assert.equal(error.error.errorMessage, "without withdraw permission");
+    }
+    assert.equal(sig, null);
+  });
+
   it("[Fail case] Withdraw native insufficient funds ", async () => {
     let sig: string | null;
     try {
