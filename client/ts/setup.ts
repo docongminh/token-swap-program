@@ -1,6 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
-import { Swap } from "../target/types/swap";
+import { Swap } from "../../target/types/swap";
 
 export function setup(authority: anchor.web3.Keypair) {
   const connection = new anchor.web3.Connection(

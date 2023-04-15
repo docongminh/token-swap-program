@@ -5,10 +5,10 @@ import { setup, delay } from "./setup";
 
 (async () => {
   const authority = anchor.web3.Keypair.fromSecretKey(
-    new Uint8Array(require("./keys/authority.json"))
+    new Uint8Array(require("../keys/authority.json"))
   ) as anchor.web3.Keypair;
   const masterAuthority = anchor.web3.Keypair.fromSecretKey(
-    new Uint8Array(require("./keys/masterAuthority.json"))
+    new Uint8Array(require("../keys/masterAuthority.json"))
   ) as anchor.web3.Keypair;
 
   const TOKEN_PRICE = 10; // rate 1 SOL -> 10 TOKEN
