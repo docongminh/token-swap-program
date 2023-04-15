@@ -30,8 +30,8 @@ pub struct WithdrawToken<'info> {
             token_mint_address.key().as_ref(),
         ],
         bump = pool_config_account.pool_config_account_bump,
-        has_one = master_authority,
-        has_one = authority,
+        has_one = master_authority @ CustomError::WithdrawPermission,
+        has_one = authority @ CustomError::InvalidAuthority,
         has_one = pool_token_account
     )]
     pub pool_config_account: Box<Account<'info, PoolConfigAccount>>,

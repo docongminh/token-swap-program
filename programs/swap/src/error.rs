@@ -10,4 +10,10 @@ pub enum CustomError {
 
     #[msg("Deactive Pool")]
     DeactivatePool,
+
+    #[msg("Invalid authority")]
+    InvalidAuthority,
+
+    #[msg("without withdraw permission")]
+    WithdrawPermission,
 }

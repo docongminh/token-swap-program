@@ -28,8 +28,8 @@ pub struct WithdrawNative<'info> {
             token_mint_address.key().as_ref(),
         ],
         bump = pool_config_account.pool_config_account_bump,
-        has_one = master_authority,
-        has_one = authority
+        has_one = master_authority  @ CustomError::WithdrawPermission,
+        has_one = authority @ CustomError::InvalidAuthority
     )]
     pub pool_config_account: Account<'info, PoolConfigAccount>,
     // CHECK: this mint use to validate account
