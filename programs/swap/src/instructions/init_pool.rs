@@ -78,6 +78,7 @@ pub fn handler_init<'info>(
     pool_config_account.pool_native_account = ctx.accounts.pool_native_account.key();
     pool_config_account.master_authority = ctx.accounts.master_authority.key();
     pool_config_account.authority = ctx.accounts.authority.key();
+    pool_config_account.is_active = true;
 
     ctx.accounts.create_native_account_vault(pool_native_account_bump)?;
     Ok(())

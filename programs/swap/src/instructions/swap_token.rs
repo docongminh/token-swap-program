@@ -25,7 +25,8 @@ pub struct SwapToken<'info> {
         ],
         bump = pool_config_account.pool_token_account_bump,
         token::mint = token_mint_address,
-        token::authority = pool_config_account
+        token::authority = pool_config_account,
+        constraint = pool_config_account.is_active @ CustomError::DeactivatePool
     )]
     pub pool_token_account: Account<'info, TokenAccount>,
 

@@ -6,5 +6,8 @@ pub enum CustomError {
     InsufficientFunds,
 
     #[msg("Account invalid type expect")]
-    InvalidAccount
+    InvalidAccount,
+
+    #[msg("Deactive Pool")]
+    DeactivatePool,
 }

@@ -7,7 +7,7 @@ pub mod utils;
 use crate::instructions::*;
 use anchor_lang::prelude::*;
 
-declare_id!("swapEsYJ7iLDbYeg9154yR1dsUjumanS7LF9KEiJQae");
+declare_id!("EeZfadhHRPxs7QRrzzUA4t99auuxhXvScy8hELJpep8b");
 
 #[program]
 pub mod swap {
@@ -21,6 +21,14 @@ pub mod swap {
         Ok(())
     }
 
+    pub fn update_config_instruction<'info>(
+        ctx: Context<'_, '_, '_, 'info, UpdateConfig<'info>>,
+        disable: bool
+    ) -> Result<()> {
+        handler_update_config(ctx, disable)?;
+
+        Ok(())
+    }
     pub fn add_liquid_instruction<'info>(
         ctx: Context<'_, '_, '_, 'info, AddLiquid<'info>>,
         amount: u64
