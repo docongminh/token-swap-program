@@ -1,13 +1,10 @@
-use crate::constants::{
-    POOL_TOKEN_ACCOUNT_SEED,
-    POOL_CONFIG_ACCOUNT_SEED,
-    POOL_NATIVE_ACCOUNT_SEED,
-};
+use crate::constants::POOL_CONFIG_ACCOUNT_SEED;
+
 use crate::state::*;
 use crate::error::*;
 
 use anchor_lang::prelude::*;
-use anchor_spl::token::{ Mint, Token, TokenAccount };
+use anchor_spl::token::{ Mint, Token };
 
 #[derive(Accounts)]
 #[instruction()]
