@@ -186,7 +186,7 @@ describe("swap", async () => {
     assert.equal(Number(info.amount), rawAmount);
   });
 
-  it("Swap Token", async () => {
+  it("[Success] Swap Token", async () => {
     await program.methods
       .swapToken(new anchor.BN(swapSolValue * anchor.web3.LAMPORTS_PER_SOL))
       .accounts({
@@ -211,6 +211,96 @@ describe("swap", async () => {
       (rawTokenPrice * swapSolValue * anchor.web3.LAMPORTS_PER_SOL) /
       anchor.web3.LAMPORTS_PER_SOL;
     assert.equal(Number(userTokenBalance.amount), tokenReceive);
+  });
+
+  it("deactivate pool config", async () => {
+    await program.methods
+      .updateConfigInstruction(false)
+      .accounts({
+        poolConfigAccount: poolConfigAccount,
+        tokenMintAddress: mintAddress,
+        authority: authority.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .rpc();
+    const poolConfigAccountData = await program.account.poolConfigAccount.fetch(
+      poolConfigAccount
+    );
+    assert.equal(poolConfigAccountData.isActive, false);
+  });
+
+  it("[Fail swap after update config] Swap Token", async () => {
+    try {
+      await program.methods
+        .swapToken(new anchor.BN(swapSolValue * anchor.web3.LAMPORTS_PER_SOL))
+        .accounts({
+          poolConfigAccount: poolConfigAccount,
+          poolTokenAccount: poolTokenAccount,
+          poolNativeAccount: poolNativeAccount,
+          tokenMintAddress: mintAddress,
+          authority: authority.publicKey,
+          userTokenAccount: userTokenAccount,
+          user: user.publicKey,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: anchor.web3.SystemProgram.programId,
+        })
+        .signers([user])
+        .rpc();
+    } catch (error) {
+      assert.equal(error.error.errorCode.code, "DeactivatePool");
+      assert.equal(error.error.errorCode.number, 6002);
+      assert.equal(error.error.errorMessage, "Deactive Pool");
+    }
+  });
+
+  it("Activate pool config", async () => {
+    await program.methods
+      .updateConfigInstruction(true)
+      .accounts({
+        poolConfigAccount: poolConfigAccount,
+        tokenMintAddress: mintAddress,
+        authority: authority.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .rpc();
+    const poolConfigAccountData = await program.account.poolConfigAccount.fetch(
+      poolConfigAccount
+    );
+    assert.equal(poolConfigAccountData.isActive, true);
+  });
+
+  it("Swap Token", async () => {
+    const beforeBalance = (await getAccount(connection, userTokenAccount))
+      .amount;
+    await program.methods
+      .swapToken(new anchor.BN(swapSolValue * anchor.web3.LAMPORTS_PER_SOL))
+      .accounts({
+        poolConfigAccount: poolConfigAccount,
+        poolTokenAccount: poolTokenAccount,
+        poolNativeAccount: poolNativeAccount,
+        tokenMintAddress: mintAddress,
+        authority: authority.publicKey,
+        userTokenAccount: userTokenAccount,
+        user: user.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .signers([user])
+      .rpc();
+    const userTokenBalance = await getAccount(connection, userTokenAccount);
+    const rawTokenPrice = parseUnits(
+      tokenPrice.toString(),
+      decimals
+    ).toNumber();
+    const tokenReceive =
+      (rawTokenPrice * swapSolValue * anchor.web3.LAMPORTS_PER_SOL) /
+      anchor.web3.LAMPORTS_PER_SOL;
+    assert.equal(
+      Number(userTokenBalance.amount) - Number(beforeBalance),
+      tokenReceive
+    );
   });
 
   it("[fail case] Swap Token insufficient funds", async () => {
