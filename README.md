@@ -50,5 +50,5 @@ Run swap:
 ```
  
 ## Notes:
-  - Currently, I have sat default SOL value to swap: 0.5 SOL -> receive 5 Token. use specify value at [here](https://github.com/docongminh/token-swap-program/blob/master/client/swap.ts#L26-L41)
-  - I public `authority`, `master authority`, and `user` [private key](https://github.com/docongminh/token-swap-program/tree/master/client/keys) for convenient testing. All wallet already airdrop SOL for network fee
+  - Currently, I have set default SOL value for swap: 0.5 SOL -> receive 5 Token. use specified value at [here](https://github.com/docongminh/token-swap-program/blob/master/client/swap.ts#L26-L41)
+  - I made public `authority`, `master authority`, and `user` [private key](https://github.com/docongminh/token-swap-program/tree/master/client/keys) for convenient testing. All wallet have already been airdrop SOL for network fees.
